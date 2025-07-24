@@ -4,7 +4,7 @@
  * This service handles authentication and data fetching from the Fi MCP stream.
  */
 
-import { defineAction, secret } from 'genkit';
+import { defineAction } from 'genkit';
 import { z } from 'zod';
 import { spawn } from 'child_process';
 import { cookies } from 'next/headers';
@@ -35,7 +35,7 @@ const clearSessionToken = () => {
 export const authenticate = defineAction(
   {
     name: 'fiMcp/authenticate',
-    inputSchema: z.object({ passcode: secret('The Fi-MCP passcode') }),
+    inputSchema: z.object({ passcode: z.string().describe('The Fi-MCP passcode') }),
     outputSchema: z.boolean(),
   },
   async ({ passcode }) => {
