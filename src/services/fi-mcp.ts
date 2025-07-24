@@ -151,4 +151,3 @@ export const fetch_stock_transactions = ai.defineTool(
     },
     async () => callMcpTool('fetch_stock_transactions', {})
 );
-

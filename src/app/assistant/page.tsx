@@ -55,7 +55,7 @@ export default function AssistantPage() {
       }
     }
     verifyAuth();
-  }, []);
+  }, [toast]);
 
   useEffect(() => {
     if (scrollRef.current) {
