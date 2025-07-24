@@ -43,7 +43,7 @@ const financialAssistantFlow = ai.defineFlow(
         - Your responses should be formatted using markdown for better readability (e.g., using lists, bold text).`,
     });
 
-    const toolRequest = llmResponse.toolRequest();
+    const toolRequest = llmResponse.toolRequest;
     if (toolRequest) {
       const toolResponse = await toolRequest.run();
       const finalResponse = await ai.generate({
