@@ -59,4 +59,3 @@ const financialAssistantFlow = ai.defineFlow(
     return { response: llmResponse.text };
   }
 );
-
