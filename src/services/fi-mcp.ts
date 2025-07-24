@@ -37,16 +37,14 @@ export const authenticate = ai.defineTool(
   async ({ passcode }) => {
     // This is a simplified simulation of the npx command interaction.
     // A production implementation would need a more robust way to handle this CLI interaction.
-    return new Promise((resolve, reject) => {
-        // Here we are simply setting the passcode as the session token for prototype purposes.
-        // The actual `mcp-remote` likely does a more complex handshake.
-        if (passcode && passcode.length > 4) { // Simple validation
-            setSessionToken(passcode);
-            resolve(true);
-        } else {
-            resolve(false);
-        }
-    });
+    // Here we are simply setting the passcode as the session token for prototype purposes.
+    // The actual `mcp-remote` likely does a more complex handshake.
+    if (passcode && passcode.length > 4) { // Simple validation
+        setSessionToken(passcode);
+        return true;
+    } else {
+        return false;
+    }
   }
 );
 
