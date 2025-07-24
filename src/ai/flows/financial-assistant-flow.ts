@@ -35,8 +35,7 @@ const financialAssistantFlow = ai.defineFlow(
       model: 'googleai/gemini-1.5-flash',
       tools: [authenticate, checkAuth, fetch_net_worth, fetch_credit_report, fetch_epf_details, fetch_mf_transactions],
       system: `You are an expert financial assistant for the EcoFinance app.
-        Your role is to provide clear, insightful, and actionable answers to the user's financial questions.
-        The user is already authenticated. You can directly use the financial data tools to answer the user's question.
+        The user has already been authenticated. You can directly use the financial data tools to answer the user's question.
         - Ground your answers in the data provided by the tools. Do not make up information.
         - Be concise and easy to understand. Avoid jargon where possible.
         - If the user asks a question that cannot be answered with the available data, state that you don't have the information and suggest what they can do.
@@ -60,3 +59,4 @@ const financialAssistantFlow = ai.defineFlow(
     return { response: llmResponse.text };
   }
 );
+

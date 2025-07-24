@@ -39,12 +39,11 @@ export const authenticate = ai.defineTool(
     // A production implementation would need a more robust way to handle this CLI interaction.
     // Here we are simply setting the passcode as the session token for prototype purposes.
     // The actual `mcp-remote` likely does a more complex handshake.
-    if (passcode && passcode.length > 4) { // Simple validation
+    if (passcode) {
         setSessionToken(passcode);
         return true;
-    } else {
-        return false;
     }
+    return false;
   }
 );
 
@@ -61,7 +60,7 @@ export const checkAuth = ai.defineTool(
       return !!token;
     }
 );
-  
+
 
 export const fetch_net_worth = ai.defineTool(
     {
@@ -76,41 +75,9 @@ export const fetch_net_worth = ai.defineTool(
         throw new Error('Not authenticated with Fi-MCP. Please provide a passcode.');
       }
       
-      const today = new Date();
-      let response = 'Historical Net Worth (Simulated):\n\n';
-      
-      for (let i = 5; i >= 0; i--) {
-        const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
-        const month = date.toLocaleString('default', { month: 'long' });
-        const year = date.getFullYear();
-        
-        // Simulate net worth fluctuations
-        const baseNetWorth = 1100000;
-        const fluctuation = (Math.random() - 0.2) * 50000 * (6-i);
-        const netWorth = Math.round(baseNetWorth + fluctuation);
-        
-        const assets = Math.round(netWorth * 1.2);
-        const liabilities = Math.round(assets - netWorth);
-
-        response += `**${month} ${year}:**\n`;
-        response += `- Net Worth: ₹${netWorth.toLocaleString('en-IN')}\n`;
-        response += `- Assets: ₹${assets.toLocaleString('en-IN')}\n`;
-        response += `- Liabilities: ₹${liabilities.toLocaleString('en-IN')}\n\n`;
-      }
-       
-      const sixMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 6, 1);
-      const startNetWorth = 1100000 + (Math.random() - 0.2) * 50000;
-      const currentNetWorth = 1250000;
-      const change = currentNetWorth - startNetWorth;
-      const percentageChange = (change / startNetWorth * 100).toFixed(1);
-
-      response += `**Summary (6 months):**\n`;
-      response += `- Change: +₹${change.toLocaleString('en-IN')} (+${percentageChange}%)\n`;
-      response += `- Breakdown:\n`;
-      response += `  - Assets: ₹1,500,000 (Stocks, MFs, Cash)\n`;
-      response += `  - Liabilities: ₹250,000 (Credit Card, Personal Loan)\n`;
-
-      return response;
+      // In a real application, this would make a call to the Fi-MCP stream.
+      // For this prototype, we return a success message indicating what would happen.
+      return "Successfully called fetch_net_worth. In a real app, this would return your net worth data from the Fi-MCP stream.";
     }
 );
 
@@ -119,22 +86,15 @@ export const fetch_credit_report = ai.defineTool(
       name: 'fetch_credit_report',
       description: "Retrieve comprehensive credit report information",
       inputSchema: z.void(),
-      outputSchema: z.string().describe('The financial context retrieved from Fi-MCP.'),
+      outputSchema: z.string().describe('A summary of the user\'s credit report.'),
     },
     async () => {
       const token = getSessionToken();
       if (!token) {
         throw new Error('Not authenticated with Fi-MCP. Please provide a passcode.');
       }
-      return `
-      - Current Credit Score: 720
-      - Factors affecting score:
-        - High credit utilization on HDFC Credit Card (85%)
-        - One late payment on personal loan (3 months ago)
-      - Recommendations:
-        - Pay down HDFC card balance below 30% utilization.
-        - Set up auto-pay for all loans and credit cards to avoid missed payments.
-      `;
+      // In a real application, this would make a call to the Fi-MCP stream.
+      return "Successfully called fetch_credit_report. In a real app, this would return your credit score and report details.";
     }
 );
 
@@ -143,20 +103,15 @@ export const fetch_epf_details = ai.defineTool(
       name: 'fetch_epf_details',
       description: "Access Employee Provident Fund account information",
       inputSchema: z.void(),
-      outputSchema: z.string().describe('The financial context retrieved from Fi-MCP.'),
+      outputSchema: z.string().describe('A summary of the user\'s EPF details.'),
     },
     async () => {
         const token = getSessionToken();
         if (!token) {
           throw new Error('Not authenticated with Fi-MCP. Please provide a passcode.');
         }
-        return `
-        - Current account balance: ₹5,00,000
-        - Employer: Acme Corp
-        - Employee contribution: ₹2,00,000
-        - Employer contribution: ₹2,00,000
-        - Interest earned: ₹1,00,000
-        `
+        // In a real application, this would make a call to the Fi-MCP stream.
+        return "Successfully called fetch_epf_details. In a real app, this would return your EPF account balance and contribution history.";
     }
 );
 
@@ -165,18 +120,14 @@ export const fetch_mf_transactions = ai.defineTool(
       name: 'fetch_mf_transactions',
       description: "Retrieve mutual funds transaction history for portfolio analysis",
       inputSchema: z.void(),
-      outputSchema: z.string().describe('The financial context retrieved from Fi-MCP.'),
+      outputSchema: z.string().describe('A summary of recent mutual fund transactions.'),
     },
     async () => {
         const token = getSessionToken();
         if (!token) {
           throw new Error('Not authenticated with Fi-MCP. Please provide a passcode.');
         }
-        return `
-        - Worst Performing Fund (YTD): Parag Parikh Flexi Cap Fund
-        - Current Value: ₹85,000
-        - YTD Return: -2.5%
-        - Suggestion: This fund has a high expense ratio (1.8%). Consider switching to a lower-cost index fund.
-        `;
+        // In a real application, this would make a call to the Fi-MCP stream.
+        return "Successfully called fetch_mf_transactions. In a real app, this would return a list of your mutual fund transactions for analysis.";
     }
 );
