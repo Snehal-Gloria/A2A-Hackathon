@@ -32,17 +32,11 @@ const financialAssistantFlow = ai.defineFlow(
   async ({ query }) => {
     const llmResponse = await ai.generate({
       prompt: query,
-      model: 'googleai/gemini-2.0-flash',
+      model: 'googleai/gemini-1.5-flash',
       tools: [authenticate, checkAuth, fetch_net_worth, fetch_credit_report, fetch_epf_details, fetch_mf_transactions],
       system: `You are an expert financial assistant for the EcoFinance app.
         Your role is to provide clear, insightful, and actionable answers to the user's financial questions.
-        
-        IMPORTANT: Before using any tool to fetch financial data (like fetch_net_worth, fetch_credit_report, etc.),
-        you MUST first use the 'checkAuth' tool to see if the user is authenticated.
-        
-        - If 'checkAuth' returns false, you MUST use the 'authenticate' tool to ask the user for their passcode. Do not ask for the passcode directly, the tool will handle it.
-        - Once authenticated, you can then proceed to use the other financial data tools to answer the user's question.
-        - If the user asks a question that requires financial data and they are not authenticated, your primary goal is to get them authenticated.
+        The user is already authenticated. You can directly use the financial data tools to answer the user's question.
         - Ground your answers in the data provided by the tools. Do not make up information.
         - Be concise and easy to understand. Avoid jargon where possible.
         - If the user asks a question that cannot be answered with the available data, state that you don't have the information and suggest what they can do.
@@ -56,6 +50,7 @@ const financialAssistantFlow = ai.defineFlow(
         prompt: {
           history: [llmResponse.request.prompt, llmResponse.message, toolResponse],
         },
+        model: 'googleai/gemini-1.5-flash',
       });
       return { response: finalResponse.text };
     }

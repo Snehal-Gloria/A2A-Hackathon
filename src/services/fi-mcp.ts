@@ -29,7 +29,7 @@ const getSessionToken = (): string | undefined => {
 
 export const authenticate = ai.defineTool(
   {
-    name: 'authenticateFiMcp',
+    name: 'authenticate',
     description: 'Authenticates the user with the Fi-MCP service using a passcode.',
     inputSchema: z.object({ passcode: z.string().describe('The Fi-MCP passcode') }),
     outputSchema: z.boolean(),
@@ -53,7 +53,7 @@ export const authenticate = ai.defineTool(
 
 export const checkAuth = ai.defineTool(
     {
-      name: 'checkFiMcpAuth',
+      name: 'checkAuth',
       description: 'Checks if the user is currently authenticated with the Fi-MCP service.',
       inputSchema: z.void(),
       outputSchema: z.boolean(),
@@ -148,6 +148,10 @@ export const fetch_epf_details = ai.defineTool(
       outputSchema: z.string().describe('The financial context retrieved from Fi-MCP.'),
     },
     async () => {
+        const token = getSessionToken();
+        if (!token) {
+          throw new Error('Not authenticated with Fi-MCP. Please provide a passcode.');
+        }
         return `
         - Current account balance: ₹5,00,000
         - Employer: Acme Corp
@@ -166,6 +170,10 @@ export const fetch_mf_transactions = ai.defineTool(
       outputSchema: z.string().describe('The financial context retrieved from Fi-MCP.'),
     },
     async () => {
+        const token = getSessionToken();
+        if (!token) {
+          throw new Error('Not authenticated with Fi-MCP. Please provide a passcode.');
+        }
         return `
         - Worst Performing Fund (YTD): Parag Parikh Flexi Cap Fund
         - Current Value: ₹85,000

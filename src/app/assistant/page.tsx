@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { askFinancialAssistant, AskFinancialAssistantInput } from '@/ai/flows/financial-assistant-flow';
+import { authenticate as authenticateTool, checkAuth as checkAuthTool } from '@/services/fi-mcp';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,7 +15,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
 import { Bot, Loader2, User, KeyRound } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { authenticate, checkAuth } from '@/services/fi-mcp';
 
 const formSchema = z.object({
   query: z.string().min(1, 'Please enter a query.'),
@@ -44,16 +44,14 @@ export default function AssistantPage() {
   useEffect(() => {
     async function verifyAuth() {
       try {
-        const authStatus = await checkAuth();
+        const authStatus = await checkAuthTool();
         setIsAuthenticated(authStatus);
-        if (!authStatus) {
-            setMessages([{ role: 'assistant', content: "Please provide your Fi-MCP passcode to begin." }]);
-        } else {
+        if (authStatus) {
             setMessages([{ role: 'assistant', content: "I'm ready! How can I help you with your finances today?" }]);
         }
       } catch (error) {
         setIsAuthenticated(false);
-        setMessages([{ role: 'assistant', content: "Could not verify authentication status. Please provide your Fi-MCP passcode to begin." }]);
+        toast({ title: 'Error', description: 'Could not verify authentication status. Please try again.', variant: 'destructive' });
       }
     }
     verifyAuth();
@@ -70,7 +68,7 @@ export default function AssistantPage() {
     if (!passcode) return;
     setIsAuthLoading(true);
     try {
-      const success = await authenticate({ passcode });
+      const success = await authenticateTool({ passcode });
       if (success) {
         setIsAuthenticated(true);
         setMessages([{ role: 'assistant', content: "Authentication successful! How can I help you with your finances?" }]);
@@ -124,7 +122,7 @@ export default function AssistantPage() {
 
   if (!isAuthenticated) {
     return (
-      <div className="w-full h-screen flex items-center justify-center p-4">
+      <div className="w-full h-screen flex items-center justify-center p-4 bg-background">
         <Card className="max-w-md w-full">
           <CardContent className="p-6">
             <div className="flex flex-col items-center text-center">
@@ -154,7 +152,7 @@ export default function AssistantPage() {
   }
 
   return (
-    <div className="flex flex-col h-screen w-full p-4 md:p-6">
+    <div className="flex flex-col h-screen w-full p-4 md:p-6 bg-background">
       <PageHeader title="AI Financial Assistant" />
       <Card className="mt-6 flex-1 flex flex-col">
         <CardContent className="flex-1 overflow-y-auto p-4 md:p-6" ref={scrollRef}>
