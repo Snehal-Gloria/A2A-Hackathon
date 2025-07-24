@@ -32,7 +32,7 @@ const financialAssistantFlow = ai.defineFlow(
   async ({ query }) => {
     const llmResponse = await ai.generate({
       prompt: query,
-      model: 'gemini-2.0-flash',
+      model: 'googleai/gemini-2.0-flash',
       tools: [fetch_net_worth, fetch_credit_report, fetch_epf_details, fetch_mf_transactions],
       system: `You are an expert financial assistant for the EcoFinance app.
         Your role is to provide clear, insightful, and actionable answers to the user's financial questions.
