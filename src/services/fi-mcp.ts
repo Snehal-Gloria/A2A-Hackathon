@@ -31,7 +31,7 @@ const removeSessionToken = () => {
 }
 
 const callMcpTool = async (toolName: string, params: any) => {
-  let sessionId = getSessionToken();
+  const sessionId = getSessionToken();
 
   try {
     const response = await fetch('http://localhost:8080/mcp/stream', {
@@ -73,6 +73,8 @@ const callMcpTool = async (toolName: string, params: any) => {
                 if (newSessionId) {
                   setSessionToken(newSessionId);
                 }
+                // Return the entire login object to the AI
+                return parsedText;
             }
             return parsedText;
         } catch (e) {
