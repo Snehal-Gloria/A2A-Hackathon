@@ -36,6 +36,7 @@ const callMcpTool = async (toolName: string, params: any) => {
     // This should ideally not be hit if checkAuth is used properly,
     // but as a fallback, we trigger the login flow.
     const mockSessionId = `mcp-session-${crypto.randomUUID()}`;
+    setSessionToken(mockSessionId);
     const loginUrl = `http://localhost:8080/mockWebPage?sessionId=${mockSessionId}`;
     return {
       status: 'login_required',
