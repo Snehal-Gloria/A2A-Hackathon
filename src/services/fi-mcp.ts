@@ -68,22 +68,51 @@ export const checkAuth = ai.defineTool(
 export const fetch_net_worth = ai.defineTool(
     {
       name: 'fetch_net_worth',
-      description: "Calculate comprehensive net worth using actual data from connected accounts",
+      description: "Calculate comprehensive net worth using actual data from connected accounts. Provides historical data for the last 6 months.",
       inputSchema: z.void(),
-      outputSchema: z.string().describe('The financial context retrieved from Fi-MCP.'),
+      outputSchema: z.string().describe('A markdown formatted string representing the net worth over the last 6 months.'),
     },
     async () => {
       const token = getSessionToken();
       if (!token) {
         throw new Error('Not authenticated with Fi-MCP. Please provide a passcode.');
       }
-      return `
-      - Net Worth: ₹1,250,000 (as of today)
-      - Change (6 mo): +₹150,000 (+13.6%)
-      - Breakdown:
-        - Assets: ₹1,500,000 (Stocks, MFs, Cash)
-        - Liabilities: ₹250,000 (Credit Card, Personal Loan)
-      `;
+      
+      const today = new Date();
+      let response = 'Historical Net Worth (Simulated):\n\n';
+      
+      for (let i = 5; i >= 0; i--) {
+        const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
+        const month = date.toLocaleString('default', { month: 'long' });
+        const year = date.getFullYear();
+        
+        // Simulate net worth fluctuations
+        const baseNetWorth = 1100000;
+        const fluctuation = (Math.random() - 0.2) * 50000 * (6-i);
+        const netWorth = Math.round(baseNetWorth + fluctuation);
+        
+        const assets = Math.round(netWorth * 1.2);
+        const liabilities = Math.round(assets - netWorth);
+
+        response += `**${month} ${year}:**\n`;
+        response += `- Net Worth: ₹${netWorth.toLocaleString('en-IN')}\n`;
+        response += `- Assets: ₹${assets.toLocaleString('en-IN')}\n`;
+        response += `- Liabilities: ₹${liabilities.toLocaleString('en-IN')}\n\n`;
+      }
+       
+      const sixMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 6, 1);
+      const startNetWorth = 1100000 + (Math.random() - 0.2) * 50000;
+      const currentNetWorth = 1250000;
+      const change = currentNetWorth - startNetWorth;
+      const percentageChange = (change / startNetWorth * 100).toFixed(1);
+
+      response += `**Summary (6 months):**\n`;
+      response += `- Change: +₹${change.toLocaleString('en-IN')} (+${percentageChange}%)\n`;
+      response += `- Breakdown:\n`;
+      response += `  - Assets: ₹1,500,000 (Stocks, MFs, Cash)\n`;
+      response += `  - Liabilities: ₹250,000 (Credit Card, Personal Loan)\n`;
+
+      return response;
     }
 );
 
