@@ -31,18 +31,11 @@ const removeSessionToken = () => {
 }
 
 const callMcpTool = async (toolName: string, params: any) => {
-  const sessionId = getSessionToken();
+  let sessionId = getSessionToken();
   if (!sessionId) {
-    // This should ideally not be hit if checkAuth is used properly,
-    // but as a fallback, we trigger the login flow.
-    const mockSessionId = `mcp-session-${crypto.randomUUID()}`;
-    setSessionToken(mockSessionId);
-    const loginUrl = `http://localhost:8080/mockWebPage?sessionId=${mockSessionId}`;
-    return {
-      status: 'login_required',
-      login_url: loginUrl,
-      message: 'Authentication required. Please use the login link to proceed.'
-    };
+    // If there is no session, create a temporary one to initiate the login flow.
+    sessionId = `mcp-session-${crypto.randomUUID()}`;
+    setSessionToken(sessionId);
   }
 
   try {
@@ -80,6 +73,11 @@ const callMcpTool = async (toolName: string, params: any) => {
             if (parsedText.status === 'login_required') {
                 // Clear the invalid session cookie
                 removeSessionToken();
+                 // Set the new session ID provided by the server
+                const newSessionId = parsedText.login_url.split('sessionId=')[1];
+                if (newSessionId) {
+                  setSessionToken(newSessionId);
+                }
             }
             return parsedText;
         } catch (e) {
