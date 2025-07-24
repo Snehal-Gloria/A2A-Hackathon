@@ -8,8 +8,20 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { cookies } from 'next/headers';
+import {createMcpRemote, McpRemote} from 'mcp-remote';
 
 const COOKIE_NAME = 'fi-mcp-session';
+
+let mcpRemote: McpRemote | null = null;
+const getMcpRemote = () => {
+  if (mcpRemote) {
+    return mcpRemote;
+  }
+  const url = process.env.MCP_URL || 'http://localhost:8080/mcp/stream';
+  console.log(`Connecting to MCP server at: ${url}`);
+  mcpRemote = createMcpRemote(url);
+  return mcpRemote;
+}
 
 // In a real app, you'd use a secure way to store secrets.
 // For this prototype, we'll store the session token in a cookie.
@@ -27,107 +39,116 @@ const getSessionToken = (): string | undefined => {
   return cookies().get(COOKIE_NAME)?.value;
 };
 
-export const authenticate = ai.defineTool(
-  {
-    name: 'authenticate',
-    description: 'Authenticates the user with the Fi-MCP service using a passcode.',
-    inputSchema: z.object({ passcode: z.string().describe('The Fi-MCP passcode') }),
-    outputSchema: z.boolean(),
-  },
-  async ({ passcode }) => {
-    // This is a simplified simulation of the npx command interaction.
-    // A production implementation would need a more robust way to handle this CLI interaction.
-    // Here we are simply setting the passcode as the session token for prototype purposes.
-    // The actual `mcp-remote` likely does a more complex handshake.
-    if (passcode) {
-        setSessionToken(passcode);
-        return true;
+const callMcpTool = async (toolName: string, params: any) => {
+    let sessionId = getSessionToken();
+    if (!sessionId) {
+      sessionId = `mcp-session-${crypto.randomUUID()}`;
+      setSessionToken(sessionId);
     }
-    return false;
-  }
-);
+  
+    const mcp = getMcpRemote();
+    const response = await mcp.call(toolName, params, {sessionId});
+  
+    if (response?.status === 'login_required') {
+      return `Login is required to access this information. Please open this URL to log in: ${response.login_url}`;
+    }
+  
+    if (response?.error) {
+      throw new Error(`Fi MCP Error: ${response.error}`);
+    }
+  
+    return response;
+  };
 
-
-export const checkAuth = ai.defineTool(
+  export const authenticate = ai.defineTool(
     {
-      name: 'checkAuth',
-      description: 'Checks if the user is currently authenticated with the Fi-MCP service.',
-      inputSchema: z.void(),
+      name: 'authenticate',
+      description: 'Authenticates the user with the Fi-MCP service using a passcode. This is not the primary way to log in. The user should be directed to the login URL provided when a tool call fails with a login_required error.',
+      inputSchema: z.object({ passcode: z.string().describe('The Fi-MCP passcode that the user provides.') }),
       outputSchema: z.boolean(),
     },
-    async () => {
-      const token = getSessionToken();
-      return !!token;
+    async ({ passcode }) => {
+      // The local fi-mcp-dev server uses the passcode as the session token (phone number)
+      // for simplicity. In a real scenario, this would involve a more complex
+      // authentication flow where the passcode is exchanged for a session token.
+      setSessionToken(passcode);
+      return true;
     }
-);
+  );
+  
+  
+  export const checkAuth = ai.defineTool(
+      {
+        name: 'checkAuth',
+        description: 'Checks if the user is currently authenticated with the Fi-MCP service. This should be the first tool called before any financial data is fetched.',
+        inputSchema: z.void(),
+        outputSchema: z.boolean(),
+      },
+      async () => {
+        const token = getSessionToken();
+        // A simple check to see if a session token exists.
+        // In a real app, you might also want to validate the token with the MCP server.
+        return !!token;
+      }
+  );
 
-
-export const fetch_net_worth = ai.defineTool(
+  export const fetch_net_worth = ai.defineTool(
     {
       name: 'fetch_net_worth',
-      description: "Calculate comprehensive net worth using actual data from connected accounts. Provides historical data for the last 6 months.",
+      description: "Calculate comprehensive net worth using ONLY actual data from accounts users connected on Fi Money including: Bank account balances, Mutual fund investment holdings, Indian Stocks investment holdings, Total US Stocks investment (If investing through Fi Money app), EPF account balances, Credit card debt and loan balances (if credit report connected), Any other assets/liabilities linked to Fi Money platform.",
       inputSchema: z.void(),
-      outputSchema: z.string().describe('A markdown formatted string representing the net worth over the last 6 months.'),
+      outputSchema: z.any(),
     },
-    async () => {
-      const token = getSessionToken();
-      if (!token) {
-        throw new Error('Not authenticated with Fi-MCP. Please provide a passcode.');
-      }
-      
-      // In a real application, this would make a call to the Fi-MCP stream.
-      // For this prototype, we return a success message indicating what would happen.
-      return "Successfully called fetch_net_worth. In a real app, this would return your net worth data from the Fi-MCP stream.";
-    }
+    async () => callMcpTool('fetch_net_worth', {})
+  );
+  
+  export const fetch_credit_report = ai.defineTool(
+      {
+        name: 'fetch_credit_report',
+        description: "Retrieve comprehensive credit report including scores, active loans, credit card utilization, payment history, date of birth and recent inquiries from connected credit bureaus.",
+        inputSchema: z.void(),
+        outputSchema: z.any(),
+      },
+      async () => callMcpTool('fetch_credit_report', {})
+  );
+  
+  export const fetch_epf_details = ai.defineTool(
+      {
+        name: 'fetch_epf_details',
+        description: "Retrieve detailed EPF (Employee Provident Fund) account information including: Account balance and contributions, Employer and employee contribution history, Interest earned and credited amounts.",
+        inputSchema: z.void(),
+        outputSchema: z.any(),
+      },
+      async () => callMcpTool('fetch_epf_details', {})
+  );
+  
+  export const fetch_mf_transactions = ai.defineTool(
+      {
+        name: 'fetch_mf_transactions',
+        description: "Retrieve detailed transaction history from accounts connected to Fi Money platform including: Mutual fund transactions.",
+        inputSchema: z.void(),
+        outputSchema: z.any(),
+      },
+      async () => callMcpTool('fetch_mf_transactions', {})
+  );
+
+  export const fetch_bank_transactions = ai.defineTool(
+    {
+      name: 'fetch_bank_transactions',
+      description: "Retrieve detailed bank transactions for each bank account connected to Fi money platform.",
+      inputSchema: z.void(),
+      outputSchema: z.any(),
+    },
+    async () => callMcpTool('fetch_bank_transactions', {})
 );
 
-export const fetch_credit_report = ai.defineTool(
+export const fetch_stock_transactions = ai.defineTool(
     {
-      name: 'fetch_credit_report',
-      description: "Retrieve comprehensive credit report information",
+      name: 'fetch_stock_transactions',
+      description: "Retrieve detailed indian stock transactions for all connected indian stock accounts to Fi money platform.",
       inputSchema: z.void(),
-      outputSchema: z.string().describe('A summary of the user\'s credit report.'),
+      outputSchema: z.any(),
     },
-    async () => {
-      const token = getSessionToken();
-      if (!token) {
-        throw new Error('Not authenticated with Fi-MCP. Please provide a passcode.');
-      }
-      // In a real application, this would make a call to the Fi-MCP stream.
-      return "Successfully called fetch_credit_report. In a real app, this would return your credit score and report details.";
-    }
+    async () => callMcpTool('fetch_stock_transactions', {})
 );
 
-export const fetch_epf_details = ai.defineTool(
-    {
-      name: 'fetch_epf_details',
-      description: "Access Employee Provident Fund account information",
-      inputSchema: z.void(),
-      outputSchema: z.string().describe('A summary of the user\'s EPF details.'),
-    },
-    async () => {
-        const token = getSessionToken();
-        if (!token) {
-          throw new Error('Not authenticated with Fi-MCP. Please provide a passcode.');
-        }
-        // In a real application, this would make a call to the Fi-MCP stream.
-        return "Successfully called fetch_epf_details. In a real app, this would return your EPF account balance and contribution history.";
-    }
-);
-
-export const fetch_mf_transactions = ai.defineTool(
-    {
-      name: 'fetch_mf_transactions',
-      description: "Retrieve mutual funds transaction history for portfolio analysis",
-      inputSchema: z.void(),
-      outputSchema: z.string().describe('A summary of recent mutual fund transactions.'),
-    },
-    async () => {
-        const token = getSessionToken();
-        if (!token) {
-          throw new Error('Not authenticated with Fi-MCP. Please provide a passcode.');
-        }
-        // In a real application, this would make a call to the Fi-MCP stream.
-        return "Successfully called fetch_mf_transactions. In a real app, this would return a list of your mutual fund transactions for analysis.";
-    }
-);
