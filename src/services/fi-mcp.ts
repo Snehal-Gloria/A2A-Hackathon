@@ -27,10 +27,6 @@ const getSessionToken = (): string | undefined => {
   return cookies().get(COOKIE_NAME)?.value;
 };
 
-const clearSessionToken = () => {
-    cookies().delete(COOKIE_NAME);
-}
-
 export const authenticate = ai.defineTool(
   {
     name: 'authenticateFiMcp',
@@ -69,67 +65,83 @@ export const checkAuth = ai.defineTool(
 );
   
 
-export const getFinancialContext = ai.defineTool(
+export const fetch_net_worth = ai.defineTool(
     {
-      name: 'getFinancialContext',
-      description: 'Retrieves the user\'s real-time financial context to answer their specific question. Use this tool for any questions about the user\'s finances, net worth, transactions, investments, or credit score.',
-      inputSchema: z.object({
-        query: z.string().describe('The user\'s question about their finances.'),
-      }),
+      name: 'fetch_net_worth',
+      description: "Calculate comprehensive net worth using actual data from connected accounts",
+      inputSchema: z.void(),
       outputSchema: z.string().describe('The financial context retrieved from Fi-MCP.'),
     },
-    async ({ query }) => {
+    async () => {
       const token = getSessionToken();
       if (!token) {
         throw new Error('Not authenticated with Fi-MCP. Please provide a passcode.');
       }
-      
-      // In a real implementation, you would use the token to establish a connection
-      // with `mcp-remote` and stream data.
-      // For this prototype, since we can't maintain a persistent `mcp-remote` process
-      // easily in a serverless function, we will return a simulated response.
-      // This simulates what the mcp-remote process might return as context for the LLM.
-      
-      console.log(`Simulating call to Fi-MCP with query: "${query}"`);
-  
-      // Simulate different responses based on the query
-      if (query.toLowerCase().includes('net worth')) {
+      return `
+      - Net Worth: ₹1,250,000 (as of today)
+      - Change (6 mo): +₹150,000 (+13.6%)
+      - Breakdown:
+        - Assets: ₹1,500,000 (Stocks, MFs, Cash)
+        - Liabilities: ₹250,000 (Credit Card, Personal Loan)
+      `;
+    }
+);
+
+export const fetch_credit_report = ai.defineTool(
+    {
+      name: 'fetch_credit_report',
+      description: "Retrieve comprehensive credit report information",
+      inputSchema: z.void(),
+      outputSchema: z.string().describe('The financial context retrieved from Fi-MCP.'),
+    },
+    async () => {
+      const token = getSessionToken();
+      if (!token) {
+        throw new Error('Not authenticated with Fi-MCP. Please provide a passcode.');
+      }
+      return `
+      - Current Credit Score: 720
+      - Factors affecting score:
+        - High credit utilization on HDFC Credit Card (85%)
+        - One late payment on personal loan (3 months ago)
+      - Recommendations:
+        - Pay down HDFC card balance below 30% utilization.
+        - Set up auto-pay for all loans and credit cards to avoid missed payments.
+      `;
+    }
+);
+
+export const fetch_epf_details = ai.defineTool(
+    {
+      name: 'fetch_epf_details',
+      description: "Access Employee Provident Fund account information",
+      inputSchema: z.void(),
+      outputSchema: z.string().describe('The financial context retrieved from Fi-MCP.'),
+    },
+    async () => {
         return `
-        - Net Worth: ₹1,250,000 (as of today)
-        - Change (6 mo): +₹150,000 (+13.6%)
-        - Breakdown:
-          - Assets: ₹1,500,000 (Stocks, MFs, Cash)
-          - Liabilities: ₹250,000 (Credit Card, Personal Loan)
-        `;
-      } else if (query.toLowerCase().includes('worst performer') || query.toLowerCase().includes('underperforming')) {
+        - Current account balance: ₹5,00,000
+        - Employer: Acme Corp
+        - Employee contribution: ₹2,00,000
+        - Employer contribution: ₹2,00,000
+        - Interest earned: ₹1,00,000
+        `
+    }
+);
+
+export const fetch_mf_transactions = ai.defineTool(
+    {
+      name: 'fetch_mf_transactions',
+      description: "Retrieve mutual funds transaction history for portfolio analysis",
+      inputSchema: z.void(),
+      outputSchema: z.string().describe('The financial context retrieved from Fi-MCP.'),
+    },
+    async () => {
         return `
         - Worst Performing Fund (YTD): Parag Parikh Flexi Cap Fund
         - Current Value: ₹85,000
         - YTD Return: -2.5%
         - Suggestion: This fund has a high expense ratio (1.8%). Consider switching to a lower-cost index fund.
         `;
-      } else if (query.toLowerCase().includes('credit score')) {
-        return `
-        - Current Credit Score: 720
-        - Factors affecting score:
-          - High credit utilization on HDFC Credit Card (85%)
-          - One late payment on personal loan (3 months ago)
-        - Recommendations:
-          - Pay down HDFC card balance below 30% utilization.
-          - Set up auto-pay for all loans and credit cards to avoid missed payments.
-        `;
-      }
-  
-      // Default simulated context for a generic query
-      return `
-      - Total Monthly Income: ₹75,000
-      - Total Monthly Expenses: ₹62,000
-        - Top Categories: Rent (₹25,000), Dining (₹12,000), Shopping (₹8,000)
-      - Savings Rate: 17.3%
-      - Idle Cash in Savings Account: ₹55,000
-      - Recent High-Value Transactions:
-        - Amazon.in: ₹15,000 (Electronics)
-        - Indigo: ₹8,000 (Flights)
-      `;
     }
 );

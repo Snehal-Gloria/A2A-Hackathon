@@ -6,7 +6,7 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { getFinancialContext } from '@/services/fi-mcp';
+import { fetch_credit_report, fetch_epf_details, fetch_mf_transactions, fetch_net_worth } from '@/services/fi-mcp';
 import { z } from 'zod';
 
 const AskFinancialAssistantInputSchema = z.object({
@@ -33,10 +33,10 @@ const financialAssistantFlow = ai.defineFlow(
     const llmResponse = await ai.generate({
       prompt: query,
       model: 'gemini-2.0-flash',
-      tools: [getFinancialContext],
+      tools: [fetch_net_worth, fetch_credit_report, fetch_epf_details, fetch_mf_transactions],
       system: `You are an expert financial assistant for the EcoFinance app.
         Your role is to provide clear, insightful, and actionable answers to the user's financial questions.
-        - You MUST use the 'getFinancialContext' tool to get the user's real-time financial data before answering any question.
+        - You MUST use the available tools to get the user's real-time financial data before answering any question.
         - Ground your answers in the data provided by the tool. Do not make up information.
         - Be concise and easy to understand. Avoid jargon where possible.
         - If the user asks a question that cannot be answered with the available data, state that you don't have the information and suggest what they can do.
