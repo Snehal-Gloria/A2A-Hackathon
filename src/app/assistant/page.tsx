@@ -68,6 +68,7 @@ export default function AssistantPage() {
     if (!passcode) return;
     setIsAuthLoading(true);
     try {
+      // The passcode is a phone number from the test data scenarios.
       const success = await authenticateTool({ passcode });
       if (success) {
         setIsAuthenticated(true);
@@ -81,7 +82,7 @@ export default function AssistantPage() {
       setIsAuthenticated(false);
       toast({
         title: 'Authentication Failed',
-        description: 'The passcode is incorrect. Please try again.',
+        description: 'The passcode is incorrect or the service is unavailable. Please try again.',
         variant: 'destructive',
       });
     } finally {
@@ -129,14 +130,14 @@ export default function AssistantPage() {
               <KeyRound className="w-12 h-12 text-primary mb-4" />
               <h2 className="text-2xl font-bold mb-2">Fi-MCP Authentication</h2>
               <p className="text-muted-foreground mb-6">
-                Please enter the passcode from your Fi Money app to securely connect your financial data.
+                Enter a phone number from the test data to simulate login and connect your financial data.
               </p>
               <form onSubmit={handlePasscodeSubmit} className="w-full space-y-4">
                 <Input
-                  type="password"
+                  type="text"
                   value={passcode}
                   onChange={(e) => setPasscode(e.target.value)}
-                  placeholder="Enter Passcode"
+                  placeholder="e.g., 2222222222"
                   disabled={isAuthLoading}
                 />
                 <Button type="submit" className="w-full" disabled={isAuthLoading || !passcode}>
@@ -164,8 +165,9 @@ export default function AssistantPage() {
                     <Bot className="h-6 w-6 text-primary" />
                   </div>
                 )}
-                <div className={`max-w-lg p-3 rounded-lg ${msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
-                  <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                <div className={`max-w-lg p-3 rounded-lg ${msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}
+                  dangerouslySetInnerHTML={{ __html: msg.content.replace(/\[Login to Fi Money\]\((.*?)\)/g, '<a href="$1" target="_blank" class="text-primary underline">Login to Fi Money</a>') }}
+                >
                 </div>
                 {msg.role === 'user' && (
                   <div className="p-2 rounded-full bg-accent/80 border border-accent">

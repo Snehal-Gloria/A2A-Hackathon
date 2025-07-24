@@ -42,9 +42,9 @@ const financialAssistantFlow = ai.defineFlow(
       
       2.  **Handle Unauthenticated Users**:
           *   If \`checkAuth\` returns \`false\`, it means the user is not logged in.
-          *   In this case, you should inform the user that they need to log in to proceed and that you will provide them with a login link.
-          *   Then, immediately call any of the financial data tools (e.g., \`fetch_net_worth\`). This will trigger the authentication flow and return a \`login_url\`.
-          *   When you receive the \`login_url\`, present it to the user as a clickable link and instruct them to complete the login process in their browser. Also, ask them to notify you once they are done.
+          *   In this case, you must inform the user that they need to log in to proceed.
+          *   Then, you must call any of the financial data tools (e.g., \`fetch_net_worth\`). This will trigger the authentication flow and return a JSON object containing a \`login_url\`.
+          *   When you receive the \`login_url\`, you MUST present it to the user as a clickable link and instruct them to complete the login process in their browser. Also, ask them to notify you once they are done with a message like "I'm done" or "I have logged in".
       
       3.  **Handle Authenticated Users**:
           *   If \`checkAuth\` returns \`true\`, the user is already authenticated.

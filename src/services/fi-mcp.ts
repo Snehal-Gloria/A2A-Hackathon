@@ -13,12 +13,11 @@ const COOKIE_NAME = 'fi-mcp-session';
 
 // In a real app, you'd use a secure way to store secrets.
 // For this prototype, we'll store the session token in a cookie.
-// This is NOT secure for production.
 const setSessionToken = (token: string) => {
   cookies().set(COOKIE_NAME, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    maxAge: 30 * 60, // 30 minutes, as per Fi MCP docs
+    maxAge: 30 * 60, // 30 minutes
     path: '/',
   });
 };
@@ -27,53 +26,86 @@ const getSessionToken = (): string | undefined => {
   return cookies().get(COOKIE_NAME)?.value;
 };
 
+const removeSessionToken = () => {
+  cookies().delete(COOKIE_NAME);
+}
+
 const callMcpTool = async (toolName: string, params: any) => {
-    const sessionId = getSessionToken();
-    if (!sessionId) {
-      // This will simulate the login_required response.
-      const mockSessionId = `mcp-session-${crypto.randomUUID()}`;
-      const loginUrl = `http://localhost:8080/mockWebPage?sessionId=${mockSessionId}`;
-      return {
-        status: 'login_required',
-        login_url: loginUrl,
-        message: `Needs to login first by going to the login url. Please use phone number ${mockSessionId.substring(0, 10)} to login.`
-      };
-    }
-  
-    // Placeholder data for demonstration
-    const placeholderData: Record<string, any> = {
-        fetch_net_worth: {
-            netWorthResponse: {
-                totalNetWorthValue: { currencyCode: 'INR', units: '658305' },
-                assetValues: [
-                    { netWorthAttribute: 'ASSET_TYPE_MUTUAL_FUND', value: { currencyCode: 'INR', units: '84642' } },
-                    { netWorthAttribute: 'ASSET_TYPE_EPF', value: { currencyCode: 'INR', units: '211111' } },
-                ],
-                liabilityValues: [
-                    { netWorthAttribute: 'LIABILITY_TYPE_VEHICLE_LOAN', value: { currencyCode: 'INR', units: '5000' } },
-                ]
-            }
-        },
-        fetch_credit_report: { creditReports: [{ creditReportData: { score: { bureauScore: "746" } } }] },
-        fetch_epf_details: { uanAccounts: [{ rawDetails: { overall_pf_balance: { current_pf_balance: "211111" } } }] },
-        fetch_mf_transactions: { mfTransactions: [{ schemeName: "Canara Robeco Gilt Fund - Regular Plan", txns: [[1,"2023-01-01",66.5546,100,6655.46]] }] },
-        fetch_bank_transactions: { bankTransactions: [{ bank: 'HDFC Bank', txns: [['80085','UPI-SHEETAL RAVINDRA DA-SHEETAL.DAMBAL@OKSBI','2025-07-09',1,'CARD_PAYMENT','-79109']] }] },
-        fetch_stock_transactions: { stockTransactions: [{ isin: 'INE0BWS23018', txns: [[1, '2023-05-04', 100]] }] },
+  const sessionId = getSessionToken();
+  if (!sessionId) {
+    // This should ideally not be hit if checkAuth is used properly,
+    // but as a fallback, we trigger the login flow.
+    const mockSessionId = `mcp-session-${crypto.randomUUID()}`;
+    const loginUrl = `http://localhost:8080/mockWebPage?sessionId=${mockSessionId}`;
+    return {
+      status: 'login_required',
+      login_url: loginUrl,
+      message: 'Authentication required. Please use the login link to proceed.'
     };
-  
-    return placeholderData[toolName] || { message: `Successfully called ${toolName}. In a real app, this would return live data.`};
+  }
+
+  try {
+    const response = await fetch('http://localhost:8080/mcp/stream', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Mcp-Session-Id': sessionId,
+      },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'tools/call',
+        params: {
+          name: toolName,
+          arguments: params,
+        },
+      }),
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`MCP server error: ${response.status} ${response.statusText}`, errorText);
+        throw new Error(`Request to MCP server failed with status ${response.status}: ${errorText}`);
+    }
+
+    const jsonResponse = await response.json();
+    
+    // The MCP server returns the data in a text-based JSON payload.
+    // We need to parse it before returning.
+    if (jsonResponse.result && typeof jsonResponse.result.text === 'string') {
+        try {
+            const parsedText = JSON.parse(jsonResponse.result.text);
+            // If login is required, the server sends a specific JSON structure.
+            if (parsedText.status === 'login_required') {
+                // Clear the invalid session cookie
+                removeSessionToken();
+            }
+            return parsedText;
+        } catch (e) {
+            // If it's not JSON, it might be a simple text message.
+            return jsonResponse.result.text;
+        }
+    }
+    
+    return jsonResponse;
+
+  } catch (error) {
+    console.error('Error calling MCP tool:', error);
+    // This could be a network error if the fi-mcp-dev server is not running.
+    throw new Error('Failed to connect to the Fi MCP service. Please ensure the `fi-mcp-dev` server is running.');
+  }
 };
 
 export const authenticate = ai.defineTool(
     {
       name: 'authenticate',
-      description: 'Authenticates the user with the Fi-MCP service using a passcode. This is the primary way to log in.',
-      inputSchema: z.object({ passcode: z.string().describe('The Fi-MCP passcode that the user provides. This is usually a phone number for the dev server.') }),
+      description: 'Authenticates the user with the Fi-MCP service using a passcode. The passcode is the phone number for the desired test data scenario. This is the primary way to log in.',
+      inputSchema: z.object({ passcode: z.string().describe('The Fi-MCP passcode (phone number) that the user provides.') }),
       outputSchema: z.boolean(),
     },
     async ({ passcode }) => {
+      // For the fi-mcp-dev server, the "passcode" is the phone number which becomes the session ID.
       // This simulates a successful login by setting the session cookie.
-      // The passcode would be one of the phone numbers from the test data.
       setSessionToken(passcode);
       return true;
     }
