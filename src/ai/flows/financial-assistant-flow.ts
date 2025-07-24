@@ -46,6 +46,7 @@ const financialAssistantFlow = ai.defineFlow(
     const toolRequest = llmResponse.toolRequest;
     if (toolRequest) {
       const toolResponse = await toolRequest.run();
+      // After getting the tool's response, send it back to the LLM to generate a natural language summary.
       const finalResponse = await ai.generate({
         prompt: {
           history: [llmResponse.request.prompt, llmResponse.message, toolResponse],
