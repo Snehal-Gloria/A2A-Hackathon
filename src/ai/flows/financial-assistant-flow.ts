@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A conversational AI assistant flow that answers financial questions
@@ -18,17 +19,6 @@ const AskFinancialAssistantOutputSchema = z.object({
 });
 export type AskFinancialAssistantOutput = z.infer<typeof AskFinancialAssistantOutputSchema>;
 
-// This is the tool that the AI will use to fetch the user's financial data.
-const financialContextTool = ai.defineTool(
-  {
-    name: 'getFinancialContext',
-    description: 'Retrieves the user\'s real-time financial context to answer their specific question. Use this tool for any questions about the user\'s finances, net worth, transactions, investments, or credit score.',
-    inputSchema: z.object({ query: z.string() }),
-    outputSchema: z.string(),
-  },
-  async (input) => getFinancialContext(input)
-);
-
 export async function askFinancialAssistant(input: AskFinancialAssistantInput): Promise<AskFinancialAssistantOutput> {
   return financialAssistantFlow(input);
 }
@@ -42,8 +32,8 @@ const financialAssistantFlow = ai.defineFlow(
   async ({ query }) => {
     const llmResponse = await ai.generate({
       prompt: query,
-      model: 'googleai/gemini-2.0-flash',
-      tools: [financialContextTool],
+      model: 'gemini-2.0-flash',
+      tools: [getFinancialContext],
       system: `You are an expert financial assistant for the EcoFinance app.
         Your role is to provide clear, insightful, and actionable answers to the user's financial questions.
         - You MUST use the 'getFinancialContext' tool to get the user's real-time financial data before answering any question.
@@ -53,16 +43,15 @@ const financialAssistantFlow = ai.defineFlow(
         - Your responses should be formatted using markdown for better readability (e.g., using lists, bold text).`,
     });
 
-    const toolCalls = llmResponse.toolCalls();
-
-    if (toolCalls.length > 0) {
-        const toolResponse = await llmResponse.forward(toolCalls);
-        const finalResponse = await ai.generate({
-            prompt: {
-              history: [llmResponse.request.prompt, llmResponse.message, toolResponse],
-            },
-        });
-        return { response: finalResponse.text };
+    const toolRequest = llmResponse.toolRequest();
+    if (toolRequest) {
+      const toolResponse = await toolRequest.run();
+      const finalResponse = await ai.generate({
+        prompt: {
+          history: [llmResponse.request.prompt, llmResponse.message, toolResponse],
+        },
+      });
+      return { response: finalResponse.text };
     }
 
 

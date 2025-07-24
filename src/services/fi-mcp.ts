@@ -1,15 +1,14 @@
+
 'use server';
 /**
  * @fileOverview Service for interacting with the Fi MCP (Model Context Protocol).
  * This service handles authentication and data fetching from the Fi MCP stream.
  */
 
-import { defineAction } from 'genkit';
+import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { spawn } from 'child_process';
 import { cookies } from 'next/headers';
 
-const FI_MCP_URL = 'https://mcp.fi.money:8080/mcp/stream';
 const COOKIE_NAME = 'fi-mcp-session';
 
 // In a real app, you'd use a secure way to store secrets.
@@ -32,9 +31,10 @@ const clearSessionToken = () => {
     cookies().delete(COOKIE_NAME);
 }
 
-export const authenticate = defineAction(
+export const authenticate = ai.defineTool(
   {
-    name: 'fiMcp/authenticate',
+    name: 'authenticateFiMcp',
+    description: 'Authenticates the user with the Fi-MCP service using a passcode.',
     inputSchema: z.object({ passcode: z.string().describe('The Fi-MCP passcode') }),
     outputSchema: z.boolean(),
   },
@@ -55,9 +55,10 @@ export const authenticate = defineAction(
 );
 
 
-export const checkAuth = defineAction(
+export const checkAuth = ai.defineTool(
     {
-      name: 'fiMcp/checkAuth',
+      name: 'checkFiMcpAuth',
+      description: 'Checks if the user is currently authenticated with the Fi-MCP service.',
       inputSchema: z.void(),
       outputSchema: z.boolean(),
     },
@@ -65,12 +66,13 @@ export const checkAuth = defineAction(
       const token = getSessionToken();
       return !!token;
     }
-  );
+);
   
 
-  export const getFinancialContext = defineAction(
+export const getFinancialContext = ai.defineTool(
     {
-      name: 'fiMcp/getFinancialContext',
+      name: 'getFinancialContext',
+      description: 'Retrieves the user\'s real-time financial context to answer their specific question. Use this tool for any questions about the user\'s finances, net worth, transactions, investments, or credit score.',
       inputSchema: z.object({
         query: z.string().describe('The user\'s question about their finances.'),
       }),
@@ -130,5 +132,4 @@ export const checkAuth = defineAction(
         - Indigo: ₹8,000 (Flights)
       `;
     }
-  );
-  
+);
