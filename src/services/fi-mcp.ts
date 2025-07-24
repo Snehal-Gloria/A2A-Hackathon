@@ -11,8 +11,6 @@ import { cookies } from 'next/headers';
 
 const COOKIE_NAME = 'fi-mcp-session';
 
-// In a real app, you'd use a secure way to store secrets.
-// For this prototype, we'll store the session token in a cookie.
 const setSessionToken = (token: string) => {
   cookies().set(COOKIE_NAME, token, {
     httpOnly: true,
@@ -32,6 +30,7 @@ const removeSessionToken = () => {
 
 const callMcpTool = async (toolName: string, params: any) => {
   const sessionId = getSessionToken();
+  console.log(`Calling tool: ${toolName} with session ID: ${sessionId}`);
 
   try {
     const response = await fetch('http://localhost:8080/mcp/stream', {
@@ -59,30 +58,32 @@ const callMcpTool = async (toolName: string, params: any) => {
 
     const jsonResponse = await response.json();
     
-    // The MCP server returns the data in a text-based JSON payload.
-    // We need to parse it before returning.
     if (jsonResponse.result && typeof jsonResponse.result.text === 'string') {
         try {
             const parsedText = JSON.parse(jsonResponse.result.text);
-            // If login is required, the server sends a specific JSON structure.
+
             if (parsedText.status === 'login_required') {
-                // Clear the invalid session cookie
+                console.log('Login required. Setting new session token.');
+                // Clear any invalid session cookie
                 removeSessionToken();
-                 // Set the new session ID provided by the server
+                // Extract and set the new session ID provided by the server
                 const newSessionId = parsedText.login_url.split('sessionId=')[1];
                 if (newSessionId) {
                   setSessionToken(newSessionId);
                 }
-                // Return the entire login object to the AI
+                // Return the entire login object to the AI. This is crucial.
                 return parsedText;
             }
+            // If not login_required, this is the actual data.
             return parsedText;
         } catch (e) {
-            // If it's not JSON, it might be a simple text message.
+            // If parsing fails, it might be a simple text message.
+            console.log('MCP response is not JSON, returning as is:', jsonResponse.result.text);
             return { response: jsonResponse.result.text };
         }
     }
     
+    // Return the whole response if it's not in the expected format.
     return jsonResponse;
 
   } catch (error) {
