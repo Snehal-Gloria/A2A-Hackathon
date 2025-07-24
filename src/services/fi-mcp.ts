@@ -32,18 +32,13 @@ const removeSessionToken = () => {
 
 const callMcpTool = async (toolName: string, params: any) => {
   let sessionId = getSessionToken();
-  if (!sessionId) {
-    // If there is no session, create a temporary one to initiate the login flow.
-    sessionId = `mcp-session-${crypto.randomUUID()}`;
-    setSessionToken(sessionId);
-  }
 
   try {
     const response = await fetch('http://localhost:8080/mcp/stream', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Mcp-Session-Id': sessionId,
+        ...(sessionId && { 'Mcp-Session-Id': sessionId }),
       },
       body: JSON.stringify({
         jsonrpc: '2.0',
@@ -82,7 +77,7 @@ const callMcpTool = async (toolName: string, params: any) => {
             return parsedText;
         } catch (e) {
             // If it's not JSON, it might be a simple text message.
-            return jsonResponse.result.text;
+            return { response: jsonResponse.result.text };
         }
     }
     

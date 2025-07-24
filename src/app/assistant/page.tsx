@@ -166,7 +166,7 @@ export default function AssistantPage() {
                   </div>
                 )}
                 <div className={`max-w-lg p-3 rounded-lg ${msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}
-                  dangerouslySetInnerHTML={{ __html: msg.content.replace(/\[Login to Fi Money\]\((.*?)\)/g, '<a href="$1" target="_blank" class="text-primary underline">Login to Fi Money</a>') }}
+                  dangerouslySetInnerHTML={{ __html: msg.content.replace(/\[(Login to Fi Money)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-primary underline">$1</a>') }}
                 >
                 </div>
                 {msg.role === 'user' && (
