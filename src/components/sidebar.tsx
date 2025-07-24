@@ -12,7 +12,7 @@ import {
   SidebarFooter,
 } from '@/components/ui/sidebar';
 import { Logo } from '@/components/icons';
-import { LayoutDashboard, ReceiptText, Bot, Target, Settings, LifeBuoy } from 'lucide-react';
+import { LayoutDashboard, ReceiptText, Bot, Target, MessageCircleQuestion } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { UserNav } from './user-nav';
 
@@ -21,6 +21,7 @@ const menuItems = [
   { href: '/transactions', label: 'Transactions', icon: ReceiptText },
   { href: '/recommendations', label: 'AI Recommendations', icon: Bot },
   { href: '/goals', label: 'Financial Goals', icon: Target },
+  { href: '/assistant', label: 'AI Assistant', icon: MessageCircleQuestion },
 ];
 
 export function AppSidebar() {
